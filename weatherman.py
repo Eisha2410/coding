@@ -16,21 +16,20 @@ def func_access(file_name):
         print(read[i].split())
     print(read[0])
 
-directory = './weatherman'
-pattern = os.path.join(directory, '*2002*')
+directory = '/weatherman'
+pattern = os.path.join(directory, '*2002*.txt')
 files = glob.glob(pattern)
 
 global_max_temp = float('-inf')
 global_min_temp = float('inf')
 highest_humidity = float('-inf')
 
-func_access(files)
-
 for file_path in files:
     print(f'processing file: {file_path}')
     try:
+        func_access(files)
         with open(file_path, 'r') as  file:
-            content = file.read()
+            next(file)
             for line in file:
                 columns = line.strip().split('\t')
                 temperature = float(columns[0])  
@@ -42,7 +41,6 @@ for file_path in files:
                 
                 if humidity > highest_humidity:
                     highest_humidity = humidity   
-            print(content)
     except Exception as e:
         print(f'error processing file {file_path}: {e}')
 

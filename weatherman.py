@@ -1,10 +1,8 @@
 import os
 import glob
 import sys
+import datetime
 
-sys.argv
-for w in sys.argv:
-    print(w)
 if len(sys.argv) < 3:
     sys.exit(1)
 
@@ -21,7 +19,7 @@ def read_files(file_name):
         read[i].split(",")
 
 directory = "./weatherdata"
-pattern = os.path.join(directory, f"{years}*" )
+pattern = os.path.join(directory, f"*{years}*" )
 files = glob.glob(pattern)
 
 global_max_temp = float('-inf')
@@ -46,17 +44,17 @@ for line in my_weatherlist:
         temperature = float(line[1])  
         humidity = float(line[-1])
         date_str = line[0]
-        year, month, day = date_str.split('-') 
+        date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
 
         if temperature > global_max_temp:
            global_max_temp = temperature
-           max_temp_date = date_str
+           max_temp_date = date_obj
         if temperature < global_min_temp:
            global_min_temp = temperature
-           min_temp_date = date_str
+           min_temp_date = date_obj
         if humidity > highest_humidity:
            highest_humidity = humidity 
-           humidity_date = date_str
+           humidity_date = date_obj
 
         humidity_percentage += humidity
         humidity_count += 1
@@ -67,6 +65,6 @@ for line in my_weatherlist:
         line: {e}
         continue
 
-print(f'Highest: {global_max_temp} on {max_temp_date}')
-print(f'Lowest: {global_min_temp} on {min_temp_date}')
-print(f'Humidity: {humidity_percentage} on {humidity_date}')
+print(f'Highest: {global_max_temp} on {max_temp_date.strftime("%B %d")}')
+print(f'Lowest: {global_min_temp} on {min_temp_date.strftime("%B %d")}')
+print(f'Humidity: {humidity_percentage} on {humidity_date.strftime("%B %d")}')

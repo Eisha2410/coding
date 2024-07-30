@@ -12,15 +12,16 @@ my_weatherlist = []
 
 def read_files(file_name):
     file = open (file_name , "r")
-    read = file.read().splitlines(",")
+    read = file.read().splitlines()
     for i in range(2, len(read)-1):
         my_weatherlist.append(read[i].split(","))
         read[i].split(",")
 
-directory = sys.argv[1]
-year = sys.argv[3] if len(sys.argv) > 3 and sys.argv[2] == "-e" else None
+directory = "./weatherdata"
+year = sys.argv[1]
+sys.argv[3] if len(sys.argv) > 3 and sys.argv[2] == "-e" else None
 
-pattern = os.path.join(directory, '*2002*.txt')
+pattern = os.path.join(directory, year )
 files = glob.glob(pattern)
 
 global_max_temp = float('-inf')
@@ -59,3 +60,5 @@ for line in my_weatherlist:
 print(f'Highest: {global_max_temp}')
 print(f'Lowest: {global_min_temp}')
 print(f'Humidity: {humidity_percentage}')
+
+print("end of file processing")

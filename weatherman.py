@@ -6,8 +6,19 @@ import datetime
 if len(sys.argv) < 3:
     sys.exit(1)
 
-years = sys.argv[2]
-sys.argv[3] if len(sys.argv) > 3 and sys.argv[2] == "-e" else None
+flag = sys.argv[1]
+years = []
+
+if flag == '-e':
+    if len(sys.argv) != 3:
+        sys.exist(1)
+    years = [sys.argv[2]]
+elif flag == '-a':
+    if len(sys.argv) < 3:
+        sys.exit(1)
+    years = [sys.argv[2:]]
+else:
+    sys.exit(1)
 
 my_weatherlist = []
 
@@ -19,8 +30,10 @@ def read_files(file_name):
         read[i].split(",")
 
 directory = "./weatherdata"
-pattern = os.path.join(directory, f"*{years}*" )
-files = glob.glob(pattern)
+files = []
+for year in years:
+    pattern = os.path.join(directory, f"*{years}*")
+    files.extend(glob.glob(pattern))
 
 global_max_temp = float('-inf')
 global_min_temp = float('inf')
@@ -48,7 +61,7 @@ for line in my_weatherlist:
 
         if temperature > global_max_temp:
            global_max_temp = temperature
-           max_temp_date = date_obj
+           max_temp_date =  date_obj
         if temperature < global_min_temp:
            global_min_temp = temperature
            min_temp_date = date_obj
@@ -60,11 +73,24 @@ for line in my_weatherlist:
         humidity_count += 1
         humidity_percentage = (humidity/highest_humidity)* 100.0
 
-
     except (ValueError, IndexError) as e:
         line: {e}
         continue
+if max_temp_date:
+    max_temp_str = max_temp_date.strftime("%B %d")
+else:
+    max_temp_str = "N/A"
 
-print(f'Highest: {global_max_temp} on {max_temp_date.strftime("%B %d")}')
-print(f'Lowest: {global_min_temp} on {min_temp_date.strftime("%B %d")}')
-print(f'Humidity: {humidity_percentage} on {humidity_date.strftime("%B %d")}')
+if min_temp_date:
+    min_temp_str = min_temp_date.strftime("%B %d")
+else:
+    min_temp_str = "N/A"
+
+if humidity_date:
+    humidity_date_str = humidity_date.strftime("%B %d")
+else:
+    humidity_date_str = "N/A"
+
+print(f'Highest: {global_max_temp} on {max_temp_str}')
+print(f'Lowest: {global_min_temp} on {min_temp_str}')
+print(f'Humidity: {humidity_percentage} on {humidity_date_str}')

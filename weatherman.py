@@ -7,18 +7,35 @@ if len(sys.argv) < 3:
     sys.exit(1)
 
 flag = sys.argv[1]
-years = []
+years_month = []
 
 if flag == '-e':
     if len(sys.argv) != 3:
         sys.exist(1)
-    years = [sys.argv[2]]
+    years_month = [sys.argv[2]]
 elif flag == '-a':
     if len(sys.argv) < 3:
         sys.exit(1)
-    years = [sys.argv[2:]]
+    years_month = [sys.argv[2:]]
 else:
     sys.exit(1)
+
+month_symbol = {
+    "1": "Jan", "2": "Feb", "3": "Mar", "4": "Apr", "5": "May", "6": "Jun",
+    "7": "Jul", "8": "Aug", "9": "Sep", "10": "Oct", "11": "Nov", "12": "Dec"
+}
+
+years = []
+months = {}
+for ym in years_month:
+    if '/' in ym:
+        year, month = ym.split('/')
+        if month not in month_symbol:
+            sys.exit(1)
+        years.append(year)
+        month[year] = month_symbol[month]
+    else:
+        sys.exit(1)
 
 my_weatherlist = []
 
@@ -32,7 +49,10 @@ def read_files(file_name):
 directory = "./weatherdata"
 files = []
 for year in years:
-    pattern = os.path.join(directory, f"*{years}*")
+    if year in months:
+        pattern = os.path.join(directory, f"lahore_weather_{year}_{months[year]}*")
+    else:
+        pattern = os.path.join(directory, f"lahore_weather_{years}*")
     files.extend(glob.glob(pattern))
 
 global_max_temp = float('-inf')

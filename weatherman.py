@@ -9,15 +9,13 @@ def parse_arguments():
 
     flag = sys.argv[1]
     years_month = []
+    if not len(sys.argv) == 3:
+        sys.exit(1)
 
     if flag == '-e':
-        if len(sys.argv) != 3:
-            sys.exist(1)
-        years_month = [sys.argv[2]]
+        years_month = sys.argv[2]
     elif flag == '-a':
-        if len(sys.argv) < 3:
-            sys.exit(1)
-        years_month = [sys.argv[2:]]
+        years_month = sys.argv[2:]
     else:
         sys.exit(1)
     return years_month, flag
@@ -131,7 +129,8 @@ def process_files(years, months):
     data_execution(my_weatherlist)
 
 def main():
-    flag, years_months = parse_arguments()
+    years_months, flag = parse_arguments()
+    print(years_months)
     
     if flag == '-e':
         handling_e_command(years_months)

@@ -13,12 +13,12 @@ def parse_arguments():
         sys.exit(1)
 
     if flag == '-e':
-        years_month = sys.argv[2]
+        years_month = [sys.argv[2]]
     elif flag == '-a':
         years_month = sys.argv[2:]
     else:
         sys.exit(1)
-    return years_month, flag
+    return flag, years_month
 
 def map_months(years_month): 
     month_symbol = {
@@ -36,7 +36,8 @@ def map_months(years_month):
             years.append(year)
             months[year] = month_symbol[month]
         else:
-            sys.exit(1)
+            year = ym
+            years.append(year)
     return years, months
 
 def read_files(file_name, my_weatherlist):
@@ -78,7 +79,6 @@ def data_execution(my_weatherlist):
             humidity_percentage = (humidity/highest_humidity)* 100.0
 
         except (ValueError, IndexError) as e:
-            line: {e}
             continue
     if max_temp_date:
         max_temp_str = max_temp_date.strftime("%B %d")
@@ -100,12 +100,14 @@ def data_execution(my_weatherlist):
     print(f'Humidity: {humidity_percentage} on {humidity_date_str}')
 
 def handling_e_command(year_month):
-    years, months = map_months([year_month])
+    years, months = map_months(year_month)
     process_files(years, months)
+    print("command e")
 
 def handling_a_command(years_month):
     years, months = map_months(years_month)
     process_files(years, months)
+    print("command a")
 
 def process_files(years, months):
     directory = "./weatherdata"
@@ -129,7 +131,7 @@ def process_files(years, months):
     data_execution(my_weatherlist)
 
 def main():
-    years_months, flag = parse_arguments()
+    flag, years_months = parse_arguments()
     print(years_months)
     
     if flag == '-e':

@@ -2,8 +2,6 @@ import os
 import glob
 import sys
 import datetime
-import matplotlib.pyplot as plt
-import numpy as np
 
 def parse_arguments():
     if len(sys.argv) < 3:
@@ -153,9 +151,7 @@ def execute_a_argument(my_weatherlist):
     print(f'Average Mean Humidity Percentage: {avg_humidity_percentage:.2f}%')
 
 def execute_c_argument(my_weatherlist, year, month):
-    days = []
-    lows = []
-    highs = []
+    days = {}
     
     for line in my_weatherlist:
         try:
@@ -165,30 +161,19 @@ def execute_c_argument(my_weatherlist, year, month):
             date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
             if date_obj.year == int(year) and date_obj.strftime('%b') == month:
                 day = date_obj.day
-                days.append(day)
-                lows.append(low_temp)
-                highs.append(high_temp)
+                if day not in days:
+                    days[day] ={ 'high': [], 'low': []}
+                days[day]['high'].append(high_temp)
+                days[day]['low'].append(low_temp)
         except (ValueError, IndexError) as e:
             continue
-        
-    plot_temperature_chart(days,lows, highs, year, month)
+    
+    for day in sorted(days):
+        high_temp = max(days[day]['high'])
+        low_temp = min(days[day]['low'])
+        print(f'{day:02d} {"+" * int(high_temp)} {high_temp}C')
+        print(f'{day:02d} {"+" * int(low_temp)} {low_temp}C')
 
-def plot_temperature_chart(days,lows, highs, year, month):
-    fig, ax = plt.subplots()
-
-    y = np.arange(len(days))
-    ax.barh(y - 0.2, lows, height=0.4, align='center', color='blue', label='Low Temps')
-    ax.barh(y + 0.2, highs, height=0.4, align='center', color='red', label='High Temps')
-
-    ax.set_yticks(y)
-    ax.set_yticklabels(days)
-
-    ax.set_xlabel('Temperature (°C)')
-    ax.set_ylabel('Day')
-    ax.set_title(f'Temperatures for {year}/{month}')
-    ax.legend()
-
-    plt.show()
 
 def handling_e_command(year_month):
     years = year_month
@@ -201,7 +186,7 @@ def handling_a_command(years_month):
     process_files(years, months, '-a')
     print("command a")
 
-def Handling_c_command(years_month):
+def handling_c_command(years_month):
     years, months = map_months(years_month)
     process_files(years, months, '-c', years[0], months[years[0]])
     print("command c")
@@ -227,7 +212,7 @@ def process_files(years, months, flag, year=None, month=None):
             except Exception as e:
                 file_path: {e}
 
-    data_execution(my_weatherlist, flag, year)
+    data_execution(my_weatherlist, flag, year, month)
 
 def main():
     flag, years_months = parse_arguments()
@@ -237,7 +222,7 @@ def main():
     elif flag == '-a':
         handling_a_command(years_months)
     elif flag == '-c':
-        Handling_c_command(years_months)
+        handling_c_command(years_months)
 
 if __name__ == "__main__":
     main()

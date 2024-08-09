@@ -2,25 +2,35 @@ import os
 import glob
 import sys
 import datetime
+from colorama import Fore, Style
 
 def parse_arguments():
-    if len(sys.argv) < 3:
-        sys.exit(1)
+    args = sys.argv[1:]
+    if not args:
+        sys.exit("error: no arguments provided")
 
-    flag = sys.argv[1]
-    if flag not in['-e', '-a', '-c']: 
-        sys.exit(1)
+    parsed_flag = [] 
+    i = 0
+
+    while i < len(args):
+        flag = args[i]
+        if flag not in [ '-e', '-a', '-c']:
+            sys.exit(f"error: invalid flag {flag}")
+        i += 1
+
+        if i >= len(args):
+            sys.exit(f"error: missing year/month after {flag}")
     
-    years_month = sys.argv[2:]
-    if flag == '-e' and len(years_month) != 1:
-        sys.exit("error: -e flag requires only one year")
-    elif flag == '-a'and len(years_month) != 1:
-        sys.exit("error: -a flag requires one year/month ")
-    elif flag == '-c' and len(years_month) != 1:
-        sys.exit("error: -c flag requires one year/twodigitmonth ")
+        years_month = args[i]
+        if flag == '-e' and '/' in years_month:
+            sys.exit("error: -e flag requires only one year")
+        elif flag in ['-a', '-c'] and '/' not in years_month:
+            sys.exit(f"error: {flag} flag requires year/month ")
 
+        parsed_flag.append((flag, years_month))
+        i += 1
 
-    return flag, years_month
+    return parsed_flag
 
 def map_months(years_month): 
     month_symbol = {
@@ -28,19 +38,12 @@ def map_months(years_month):
         "7": "Jul", "8": "Aug", "9": "Sep", "10": "Oct", "11": "Nov", "12": "Dec"
     }
 
-    years = []
-    months = {}
-    for ym in years_month:
-        if '/' in ym:
-            year, month = ym.split('/')
-            month = month.lstrip('0')
-            if month not in month_symbol:
-                sys.exit(1)
-            years.append(year)
-            months[year] = month_symbol[month]
-        else:
-            sys.exit("error: -a flag requires year/month in argument")
-    return years, months
+    year, month = years_month.split('/')
+    month = month.lstrip('0')
+    if month not in month_symbol:
+        sys.exit("error: Invalid month in argument")
+
+    return year, month_symbol[month]
 
 def read_files(file_name, my_weatherlist):
     file = open (file_name , "r")
@@ -111,6 +114,7 @@ def execute_e_argument(my_weatherlist):
 
 def execute_a_argument(my_weatherlist):
     temp_dict = {}
+
     for line in my_weatherlist:
         try:
             date_str = line[0]
@@ -129,22 +133,29 @@ def execute_a_argument(my_weatherlist):
     
     highest_avg_temp = float('-inf')
     lowest_avg_temp = float('inf')
-    total_avg_humidity = 0
-    year_count = 0
+    total_humidity_sum = 0
+    total_humidity_count = 0
 
     for year in temp_dict:
-        avg_temp = sum(temp_dict[year]['temp']) / len(temp_dict[year]['temp'])
-        avg_humidity = sum(temp_dict[year]['humidities']) / len(temp_dict[year]['humidities'])
+        temp_list = temp_dict[year]['temp']
+        humidity_list = temp_dict[year]['humidities']
 
-        if avg_temp > highest_avg_temp:
-            highest_avg_temp = avg_temp
-        if avg_temp < lowest_avg_temp:
-            lowest_avg_temp = avg_temp
+        if temp_list and humidity_list:
+            avg_temp = sum(temp_list) / len(temp_list)
+            avg_humidity = sum(humidity_list) / len(humidity_list)
 
-        total_avg_humidity += avg_humidity
-        year_count += 1
+            if avg_temp > highest_avg_temp:
+                highest_avg_temp = avg_temp
+            if avg_temp < lowest_avg_temp:
+                lowest_avg_temp = avg_temp
 
-    avg_humidity_percentage = (total_avg_humidity / year_count)
+            total_humidity_sum += sum(humidity_list)
+            total_humidity_count += len(humidity_list)
+    
+    if total_humidity_count == 0:
+        avg_humidity_percentage = 0
+    else:
+        avg_humidity_percentage = total_humidity_sum / total_humidity_count
 
     print(f'Highest Average Temperature: {round(highest_avg_temp)}')
     print(f'Lowest Average Temperature: {round(lowest_avg_temp)}')
@@ -171,25 +182,12 @@ def execute_c_argument(my_weatherlist, year, month):
     for day in sorted(days):
         high_temp = max(days[day]['high'])
         low_temp = min(days[day]['low'])
-        print(f'{day:02d} {"+" * int(high_temp)} {high_temp}C')
-        print(f'{day:02d} {"+" * int(low_temp)} {low_temp}C')
 
+        high_plus_sign = Fore.RED + "+" * int(high_temp) + Style.RESET_ALL
+        low_plus_sign = Fore.BLUE + "+" * int(low_temp) + Style.RESET_ALL
 
-def handling_e_command(year_month):
-    years = year_month
-    months = {}
-    process_files(years, months, '-e')
-    print("command e")
-
-def handling_a_command(years_month):
-    years, months = map_months(years_month)
-    process_files(years, months, '-a')
-    print("command a")
-
-def handling_c_command(years_month):
-    years, months = map_months(years_month)
-    process_files(years, months, '-c', years[0], months[years[0]])
-    print("command c")
+        print(f'{day:02d} {high_plus_sign} {high_temp}C')
+        print(f'{day:02d} {low_plus_sign} {low_temp}C')
 
 def process_files(years, months, flag, year=None, month=None):
     directory = "./weatherdata"
@@ -215,14 +213,17 @@ def process_files(years, months, flag, year=None, month=None):
     data_execution(my_weatherlist, flag, year, month)
 
 def main():
-    flag, years_months = parse_arguments()
+    parsed_flags = parse_arguments()
     
-    if flag == '-e':
-        handling_e_command(years_months)
-    elif flag == '-a':
-        handling_a_command(years_months)
-    elif flag == '-c':
-        handling_c_command(years_months)
+    for flag, years_month in parsed_flags:
+        if flag == '-e':
+            process_files([years_month], {}, '-e')
+        elif flag == '-a':
+            year, month = map_months(years_month)
+            process_files([year], {year: month}, '-a')
+        elif flag == '-c':
+            year, month = map_months(years_month)
+            process_files([year], {year: month}, '-c', year, month)
 
 if __name__ == "__main__":
     main()

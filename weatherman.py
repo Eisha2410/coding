@@ -101,7 +101,6 @@ def execute_a_argument(my_weatherlist):
             min_temperature = float(line[3])
             humidity = float(line[8])
             date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
-            #year = date_obj.year
 
             if date_obj not in temp_dict:
                 temp_dict[date_obj] = {'temp1' : [],'temp2' : [], 'humidities' : []}

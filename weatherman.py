@@ -2,41 +2,40 @@ import os
 import glob
 import sys
 import datetime
+from colorama import Fore, Style
 
 def parse_arguments():
-    if len(sys.argv) < 3:
-        sys.exit(1)
+    args = sys.argv[1:]
+    if not args:
+        sys.exit("error: no arguments provided")
 
-    flag = sys.argv[1]
-    if flag not in['-e', '-a']: 
-        sys.exit(1)
+    parsed_flag = [] 
+    i = 0
+
+    while i < len(args):
+        flag = args[i]
+        if flag not in [ '-e', '-a', '-c']:
+            sys.exit(f"error: invalid flag {flag}")
+        i += 1
+
+        if i >= len(args):
+            sys.exit(f"error: missing year/month after {flag}")
     
-    years_month = sys.argv[2:]
-    if flag == '-e' and len(years_month) != 1:
-        sys.exit("error: -e flag requires only one year")
-    elif flag == '-a'and len(years_month) != 1:
-        sys.exit("error: -a flag requires one year/month ")
+        years_month = args[i]
+        if flag == '-e' and '/' in years_month:
+            sys.exit("error: -e flag requires only one year")
+        elif flag in ['-a', '-c'] and '/' not in years_month:
+            sys.exit(f"error: {flag} flag requires year/month ")
 
-    return flag, years_month
+        parsed_flag.append((flag, years_month))
+        i += 1
 
-def map_months(years_month): 
-    month_symbol = {
+    return parsed_flag
+
+MONTH_SYMBOL = {
         "1": "Jan", "2": "Feb", "3": "Mar", "4": "Apr", "5": "May", "6": "Jun",
         "7": "Jul", "8": "Aug", "9": "Sep", "10": "Oct", "11": "Nov", "12": "Dec"
     }
-
-    years = []
-    months = {}
-    for ym in years_month:
-        if '/' in ym:
-            year, month = ym.split('/')
-            if month not in month_symbol:
-                sys.exit(1)
-            years.append(year)
-            months[year] = month_symbol[month]
-        else:
-            sys.exit("error: -a flag requires year/month in argument")
-    return years, months
 
 def read_files(file_name, my_weatherlist):
     file = open (file_name , "r")
@@ -45,42 +44,31 @@ def read_files(file_name, my_weatherlist):
         my_weatherlist.append(read[i].split(","))
         read[i].split(",")
 
-def data_execution(my_weatherlist, flag):
-    if flag == '-e':
-        execute_e_argument(my_weatherlist)
-    elif flag == '-a':
-        execute_a_argument(my_weatherlist)
-
 def execute_e_argument(my_weatherlist):
     global_max_temp = float('-inf')
     global_min_temp = float('inf')
     highest_humidity = float('-inf')
-    humidity_count = 0
-    humidity_percentage = 0
     max_temp_date = None
     min_temp_date = None
     humidity_date = None
 
     for line in my_weatherlist:
         try:
-            temperature = float(line[1])  
-            humidity = float(line[-1])
+            max_temperature = float(line[1])  
+            min_temperature = float(line[3])
+            humidity = float(line[7])
             date_str = line[0]
             date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
 
-            if temperature > global_max_temp:
-                global_max_temp = temperature
+            if max_temperature > global_max_temp:
+                global_max_temp = max_temperature
                 max_temp_date =  date_obj
-            if temperature < global_min_temp:
-                global_min_temp = temperature
+            if min_temperature < global_min_temp:
+                global_min_temp = min_temperature
                 min_temp_date = date_obj
             if humidity > highest_humidity:
-                highest_humidity = humidity 
+                highest_humidity = humidity
                 humidity_date = date_obj
-
-            humidity_percentage += humidity
-            humidity_count += 1
-            humidity_percentage = (humidity/highest_humidity)* 100.0
 
         except (ValueError, IndexError) as e:
             continue
@@ -99,71 +87,90 @@ def execute_e_argument(my_weatherlist):
     else:
         humidity_date_str = "N/A"
 
-    print(f'Highest: {global_max_temp} on {max_temp_str}')
-    print(f'Lowest: {global_min_temp} on {min_temp_str}')
-    print(f'Humidity: {humidity_percentage} on {humidity_date_str}')
+    print(f'Highest: {round(global_max_temp)}C on {max_temp_str}')
+    print(f'Lowest: {round(global_min_temp)}C on {min_temp_str}')
+    print(f'Humidity: {round(highest_humidity)} on {humidity_date_str}')
 
 def execute_a_argument(my_weatherlist):
     temp_dict = {}
+
     for line in my_weatherlist:
         try:
             date_str = line[0]
-            temperature = float(line[1])
-            humidity = float(line[-1])
+            max_temperature = float(line[1])
+            min_temperature = float(line[3])
+            humidity = float(line[8])
             date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
-            year = date_obj.year
 
-            if year not in temp_dict:
-                temp_dict[year] = {'temp' : [], 'humidities' : []}
+            if date_obj not in temp_dict:
+                temp_dict[date_obj] = {'temp1' : [],'temp2' : [], 'humidities' : []}
 
-            temp_dict[year]['temp'].append(temperature)
-            temp_dict[year]['humidities'].append(humidity)
+            temp_dict[date_obj]['temp1'].append(max_temperature)
+            temp_dict[date_obj]['temp2'].append(min_temperature)
+            temp_dict[date_obj]['humidities'].append(humidity)
         except (ValueError, IndexError) as e:
             continue
     
     highest_avg_temp = float('-inf')
     lowest_avg_temp = float('inf')
-    total_avg_humidity = 0
-    year_count = 0
 
     for year in temp_dict:
-        avg_temp = sum(temp_dict[year]['temp']) / len(temp_dict[year]['temp'])
-        avg_humidity = sum(temp_dict[year]['humidities']) / len(temp_dict[year]['humidities'])
+        temp_list1 = temp_dict[year]['temp1']
+        temp_list2 = temp_dict[year]['temp2']
+        humidity_list = temp_dict[year]['humidities']
 
-        if avg_temp > highest_avg_temp:
-            highest_avg_temp = avg_temp
-        if avg_temp < lowest_avg_temp:
-            lowest_avg_temp = avg_temp
+        if temp_list1 and temp_list2 and humidity_list:
+            avg_temp1 = sum(temp_list1) / len(temp_list1)
+            avg_temp2 = sum(temp_list2) / len(temp_list2)
+            avg_humidity = sum(humidity_list) / len(humidity_list)
 
-        total_avg_humidity += avg_humidity
-        year_count += 1
+            if avg_temp1 > highest_avg_temp:
+                highest_avg_temp = avg_temp1
+            if avg_temp2 < lowest_avg_temp:
+                lowest_avg_temp = avg_temp2
+ 
+    print(f'Highest Average Temperature: {round(highest_avg_temp)}C')
+    print(f'Lowest Average Temperature: {round(lowest_avg_temp)}C')
+    print(f'Average Mean Humidity: {round(avg_humidity)}%')
 
-    avg_humidity_percentage = (total_avg_humidity / year_count)
+def execute_c_argument(my_weatherlist, year, month):
+    days = {}
+    
+    for line in my_weatherlist:
+        try:
+            date_str = line[0]
+            low_temp = float(line[2])
+            high_temp = float(line[1])
+            date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+            if date_obj.year == int(year) and date_obj.strftime('%b') == month:
+                day = date_obj.day
+                if day not in days:
+                    days[day] ={ 'high': [], 'low': []}
+                days[day]['high'].append(high_temp)
+                days[day]['low'].append(low_temp)
+        except (ValueError, IndexError) as e:
+            continue
+    
+    for day in sorted(days):
+        high_temp = max(days[day]['high'])
+        low_temp = min(days[day]['low'])
 
-    print(f'Highest Average Temperature: {round(highest_avg_temp)}')
-    print(f'Lowest Average Temperature: {round(lowest_avg_temp)}')
-    print(f'Average Mean Humidity Percentage: {avg_humidity_percentage:.2f}%')
+        high_plus_sign = Fore.RED + "+" * int(high_temp) + Style.RESET_ALL
+        low_plus_sign = Fore.BLUE + "+" * int(low_temp) + Style.RESET_ALL
 
+        print(f'{day:02d} {high_plus_sign} {high_temp}C')
+        print(f'{day:02d} {low_plus_sign} {low_temp}C')
 
-def handling_e_command(year_month):
-    years = year_month
-    months = {}
-    process_files(years, months, '-e')
-    print("command e")
-
-def handling_a_command(years_month):
-    years, months = map_months(years_month)
-    process_files(years, months, '-a')
-    print("command a")
-
-def process_files(years, months, flag):
+def process_files(years, months, flag, year=None, month=None):
     directory = "./weatherdata"
     files = []
     for year in years:
         if flag == '-a' and year in months:
                 pattern = os.path.join(directory, f"lahore_weather_{year}_{months[year]}*")
+        elif flag == '-c':
+            pattern = os.path.join(directory, f"lahore_weather_{year}_{month}*")
         else:
-            pattern = os.path.join(directory, f"lahore_weather_{years}*")
+            pattern = os.path.join(directory, f"lahore_weather_{year}*")
         files.extend(glob.glob(pattern))
 
     my_weatherlist = []
@@ -175,15 +182,24 @@ def process_files(years, months, flag):
             except Exception as e:
                 file_path: {e}
 
-    data_execution(my_weatherlist, flag)
+    print(year, month)                
+    return my_weatherlist
 
 def main():
-    flag, years_months = parse_arguments()
+    parsed_flags = parse_arguments()
     
-    if flag == '-e':
-        handling_e_command(years_months)
-    elif flag == '-a':
-        handling_a_command(years_months)
-
+    for flag, years_month in parsed_flags:
+        if flag == '-e':
+            my_weatherlist = process_files([years_month], {}, '-e')
+            execute_e_argument(my_weatherlist)
+        elif flag in ['-a', '-c']:
+            year, month = years_month.split('/')
+            month = MONTH_SYMBOL[month.lstrip('0')]
+            my_weatherlist = process_files([year], {year: month}, flag, year, month)
+            if flag == '-a':
+                execute_a_argument(my_weatherlist)
+            elif flag == '-c':
+                execute_c_argument(my_weatherlist, year, month)
+        
 if __name__ == "__main__":
     main()

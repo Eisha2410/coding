@@ -101,14 +101,14 @@ def execute_a_argument(my_weatherlist):
             min_temperature = float(line[3])
             humidity = float(line[8])
             date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%d")
-            year = date_obj.year
+            #year = date_obj.year
 
-            if year not in temp_dict:
-                temp_dict[year] = {'temp1' : [],'temp2' : [], 'humidities' : []}
+            if date_obj not in temp_dict:
+                temp_dict[date_obj] = {'temp1' : [],'temp2' : [], 'humidities' : []}
 
-            temp_dict[year]['temp1'].append(max_temperature)
-            temp_dict[year]['temp2'].append(min_temperature)
-            temp_dict[year]['humidities'].append(humidity)
+            temp_dict[date_obj]['temp1'].append(max_temperature)
+            temp_dict[date_obj]['temp2'].append(min_temperature)
+            temp_dict[date_obj]['humidities'].append(humidity)
         except (ValueError, IndexError) as e:
             continue
     

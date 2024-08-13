@@ -158,8 +158,7 @@ def execute_c_argument(my_weatherlist, year, month):
         high_plus_sign = Fore.RED + "+" * int(high_temp) + Style.RESET_ALL
         low_plus_sign = Fore.BLUE + "+" * int(low_temp) + Style.RESET_ALL
 
-        print(f'{day:02d} {high_plus_sign} {high_temp}C')
-        print(f'{day:02d} {low_plus_sign} {low_temp}C')
+        print(f'{day:02d} {low_plus_sign}{high_plus_sign} {round(low_temp)}C-{round(high_temp)}C')
 
 def process_files(years, months, flag, year=None, month=None):
     directory = "./weatherdata"
@@ -182,7 +181,7 @@ def process_files(years, months, flag, year=None, month=None):
             except Exception as e:
                 file_path: {e}
 
-    print(year, month)                
+    print(month, year)                
     return my_weatherlist
 
 def main():

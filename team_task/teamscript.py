@@ -7,7 +7,7 @@ def parse_company_data(file_path):
         for line in file:
             line = line.strip()
 
-            if line and not line.startswith(('Year', 'Total_comments', 'Task_count', 'Most_common')):
+            if line and not line.startswith(('Year', 'Comments per month', 'Tasks', 'Total_comments', 'Task_count', 'Most_common')):
                 if current_company and company_data:
                     all_companies_data.append((current_company, company_data))
                 current_company = line

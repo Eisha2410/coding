@@ -1,4 +1,6 @@
-def parse_company_data(file_path):
+import csv
+
+def parse_company_data(file_path, output_csv):
     with open(file_path, 'r') as file:
         company_data = {}
         current_company = None
@@ -72,38 +74,44 @@ def parse_company_data(file_path):
                         print(f"Error parsing most common location in line: {line}")
 
         if current_company and company_data:
-            all_companies_data.append((current_company, company_data)) 
+            all_companies_data.append((current_company, company_data))
     
-    for company, data in all_companies_data:
-        print(f"\nCompany: {company}")
+    with open(output_csv, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile) 
 
-        print("Comments per month:")
-        if data["comments_per_month"]:
-            for date, count in data["comments_per_month"].items():
-                print(f"Year: {date.split('-')[0]}, Month: {date.split('-')[1]}, Total Comments: {count}")
-        else:
-            print("No data available")
-        
-        print("Tasks interactions per month:")
-        if data["task_interactions_per_month"]:
-            for date, count in data["task_interactions_per_month"].items():
-                print(f"Year: {date.split('-')[0]}, Month: {date.split('-')[1]}, Total Entries: {count}")
-        else:
-            print("No data available")
-        
-        print(f"Total_comments {data['total_comments']}")
-        print(f"Task_counts {data['total_tasks']}")
+        for company, data in all_companies_data:
+            writer.writerow([f'Company: {company}'])
+            writer.writerow(['Comments per month:'])
+            if data["comments_per_month"]:
+                for date, count in data["comments_per_month"].items():
+                    year, month = date.split('-')
+                    writer.writerow([f'Year: {year}, Month: {month}, Total Comments: {count}'])
+            else:
+                writer.writerow(['No data available'])
 
-        print("Tasks per month:")
-        if data["tasks_per_month"]:
-            for date, count in data["tasks_per_month"].items():
-                print(f"Year: {date.split('-')[0]}, Month: {date.split('-')[1]}, Total Tasks: {count}")
-        else:
-            print("No data available")
-        
-        print(f"Most_common_title {data['most_common_title']}")
-        print(f"Most_common_location {data['most_common_location']}")
-        print("\n")
+            writer.writerow(['Tasks interactions per month:'])
+            if data["task_interactions_per_month"]:
+                for date, count in data["task_interactions_per_month"].items():
+                    year, month = date.split('-')
+                    writer.writerow([f'Year: {year}, Month: {month}, Total Entries: {count}'])
+            else:
+                writer.writerow(['No data available'])
 
-parse_company_data("companies_data.txt")         
+            writer.writerow([f'Total_comments {data["total_comments"]}'])
+            writer.writerow([f'Task_counts {data["total_tasks"]}'])
+
+            writer.writerow(['Tasks per month:'])
+            if data["tasks_per_month"]:
+                for date, count in data["tasks_per_month"].items():
+                    year, month = date.split('-')
+                    writer.writerow([f'Year: {year}, Month: {month}, Total Tasks: {count}'])
+            else:
+                writer.writerow(['No data available'])
+
+            writer.writerow([f'Most_common_title {data["most_common_title"]}'])
+            writer.writerow([f'Most_common_location {data["most_common_location"]}'])
+            writer.writerow([])
+            
+
+parse_company_data("companies_data.txt", "output_company_data_grouped.csv")         
 

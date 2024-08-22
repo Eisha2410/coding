@@ -1,137 +1,109 @@
-import re
-import os
-import ast
-from collections import defaultdict
-from datetime import datetime
-
-start_date = datetime(2023, 3, 1)
-end_date = datetime(2024, 8, 31)
-
-def extract_year_month(line):
-    match = re.search(r'Year:\s*(\d+),\s*Month:\s*(\d+)', line)
-    if match:
-        year = int(match.group(1))
-        month = int(match.group(2))
-        date = datetime(year, month, 1)
-        if start_date <= date <= end_date:
-            return date.strftime("%Y-%m")
-    return None
-
-file_path = "C:\\Users\\eisha.raazia_arbisof\\Documents\\arbisoftProject\\coding\\pythonscript\\companies_data.txt"
-print("looking for file in:", os.getcwd())
-print(f"Trying to open file: {file_path}")
-
-
-if os.path.isfile(file_path):
+def parse_company_data(file_path):
     with open(file_path, 'r') as file:
-        lines = file.readlines()
-else:
-    print(f"File {file_path} does not exist")
-    lines = []
+        company_data = {}
+        current_company = None
+        all_companies_data = []
 
-companies_data = {}
-current_company = None
-current_section = None
+        for line in file:
+            line = line.strip()
 
-for line in lines:
-    line = line.strip()
+            if line and not line.startswith(('Year', 'Total_comments', 'Task_count', 'Most_common')):
+                if current_company and company_data:
+                    all_companies_data.append((current_company, company_data))
+                current_company = line
+                company_data = {
+                "comments_per_month": {},
+                "task_interactions_per_month": {},
+                "tasks_per_month": {},
+                "total_comments": 0,
+                "total_tasks": 0,
+                "most_common_title": "None",
+                "most_common_location": "None",
+                }
 
-    if not line or line.startswith("Total_comments") or line.startswith("Task_counts"):
-        continue
+            elif line.startswith('Year'):
+                parts = line.split(',')
+                if len(parts) < 3:
+                    print(f"Error parsing line: {line}")
+                    continue
 
-    if line.isalpha():
-        current_company = line
-        companies_data[current_company] = {
-            'comments_per_month' : defaultdict(int),
-            'task_per_month' : defaultdict(int),
-            'task_interactions_per_month' : defaultdict(int),
-            'most_common_title' : defaultdict(int),
-            'most_common_location' : defaultdict(int),
-            'Total_comments' : 0,
-            'Task_counts': 0
-        }
-        continue
+                try:
+                    year = parts[0].split(' ')[1]
+                    month = parts[1].split(' ')[2]
+                    value = int(parts[2].split(' ')[-1])
+                except (IndexError, ValueError) as e:
+                    print(f"Error parsing line: {line}, Exception: {e}")
+                    continue
 
-    year_month = extract_year_month(line)
-    if current_company:
-        data = companies_data[current_company]
-        if re.search(r'comments per month', line, re.IGNORECASE):
-            current_section = 'comments' 
-        elif re.search(r'tasks interactions per month', line, re.IGNORECASE):
-            current_section = 'tasks_interactions'
-        elif re.search(r'tasks per month', line, re.IGNORECASE):
-            current_section = 'tasks'
-        elif re.search(r'Most_common_title', line, re.IGNORECASE):
-            current_section = 'most_common_title'
-            print(f"Entering most_common_title section for {current_company}")
-        elif re.search(r'Most_common_location', line, re.IGNORECASE):
-            current_section = 'most_common_location'
-            print(f"Entering most_common_location section for {current_company}")
+                if "Total Comments" in line:
+                        company_data["comments_per_month"][f'{year}-{month}'] = value
+
+                elif "Total Entries" in line:
+                        company_data["task_interactions_per_month"][f"{year}-{month}"] = value
+    
+                elif "Total Tasks" in line:
+                        company_data["tasks_per_month"][f"{year}-{month}"] = value
+                    
+            elif line.startswith('Total_comments'):
+                try:
+                    company_data['total_comments'] = int(line.split(' ')[1])
+                except ValueError:
+                    print(f"Error parsing total comments in line: {line}")
+
+            elif line.startswith('Task_counts'):
+                try:
+                    company_data['total_tasks'] = int(line.split(' ')[1])
+                except ValueError:
+                    print(f"Error parsing total tasks in line: {line}")
+
+            elif line.startswith("Most_common_title"):
+                if 'None' not in line:
+                    try:
+                        company_data['most_common_title'] = eval(line.split(' ', 1)[1])['title']
+                    except (SyntaxError, KeyError):
+                        print(f"Error parsing most common title in line: {line}")
+
+            elif line.startswith('Most_common_location'):
+                if 'None' not in line:
+                    try:
+                        location_data = eval(line.split(' ', 1)[1])
+                        company_data['most_common_location'] = f"{location_data['location__building']}, {location_data['location__floor']}, {location_data['location__room']}"
+                    except(SyntaxError, KeyError):
+                        print(f"Error parsing most common location in line: {line}")
+
+        if current_company and company_data:
+            all_companies_data.append((current_company, company_data)) 
+    
+    for company, data in all_companies_data:
+        print(f"\nCompany: {company}")
+
+        print("Comments per month:")
+        if data["comments_per_month"]:
+            for date, count in data["comments_per_month"].items():
+                print(f"Year: {date.split('-')[0]}, Month: {date.split('-')[1]}, Total Comments: {count}")
         else:
-            if current_section:
-                print(f"Processing line under section {current_section} for company {current_company}: {line}")
+            print("No data available")
+        
+        print("Tasks interactions per month:")
+        if data["task_interactions_per_month"]:
+            for date, count in data["task_interactions_per_month"].items():
+                print(f"Year: {date.split('-')[0]}, Month: {date.split('-')[1]}, Total Entries: {count}")
+        else:
+            print("No data available")
+        
+        print(f"Total_comments {data['total_comments']}")
+        print(f"Task_counts {data['total_tasks']}")
 
-            if current_section == 'comments' and year_month:
-                match = re.search(r'Total Comments:\s*(\d+)', line)
-                if match:
-                    data['comments_per_month'][year_month] += int(match.group(1))
-                    data['Total_comments'] += int(match.group(1))
+        print("Tasks per month:")
+        if data["tasks_per_month"]:
+            for date, count in data["tasks_per_month"].items():
+                print(f"Year: {date.split('-')[0]}, Month: {date.split('-')[1]}, Total Tasks: {count}")
+        else:
+            print("No data available")
+        
+        print(f"Most_common_title {data['most_common_title']}")
+        print(f"Most_common_location {data['most_common_location']}")
+        print("\n")
 
-            elif current_section == 'tasks_interactions' and year_month:
-                match = re.search(r'Total Entries:\s*(\d+)', line)
-                if match:
-                    data['task_interactions_per_month'][year_month] += int(match.group(1))
+parse_company_data("companies_data.txt")         
 
-            elif current_section == 'tasks' and year_month:
-                match = re.search(r'Total Tasks:\s*(\d+)', line)
-                if match:
-                    data['task_per_month'][year_month] += int(match.group(1))
-                    data['Task_counts'] += int(match.group(1))
-
-            elif current_section == 'most_common_title':
-                print(f"data for section {current_section} for company {current_company}: {line}")
-                try:
-                    title_dict = ast.literal_eval(line)
-                    title = title_dict.get('title')
-                    title_count = title_dict.get('title_count', 0)
-                    if title:
-                        data['most_common_title'][title] += title_count
-                        print(f"Parsed title: {title} with count: {title_count} for {current_company}")
-                    else:
-                        print(f"No title found in line: {line}")
-                except (SyntaxError, ValueError) as e:
-                    print(f"error parsing line for tilte: {line} - {e}")
-
-            elif current_section == 'most_common_location':
-                print(f"data for section {current_section} for company {current_company}: {line}")
-                try:
-                    location_dict = ast.literal_eval(line)
-                    location = f"{location_dict.get('location__building')}, {location_dict.get('location__floor')}, {location_dict.get('location__room')}"
-                    location_count = location_dict.get('location_count', 0)
-                    if location:
-                        data['most_common_location'][location] += location_count
-                        print(f"Parsed location: {location} with count: {location_count} for {current_company}")
-                    else:
-                        print(f"No location found in line: {line}")
-                except (SyntaxError, ValueError) as e:
-                    print(f"error parsing line for location: {line} - {e}")
-
-for company, data in companies_data.items():
-    print(f"\nCompany: {company}") 
-    print("Comments per month:", dict(data['comments_per_month']))
-    print("Task interactions per month:", dict(data['task_interactions_per_month']))
-    print("Total comments:", data['Total_comments'])
-    print("Task counts:", data['Task_counts'])
-    print("Task per month:", dict(data['task_per_month']))
-
-    if data['most_common_title']:
-        most_common_title = max(data['most_common_title'], key=data['most_common_title'].get)
-        print("Most common title:", most_common_title)
-    else:
-        print("most common title: no data available")
-
-    if data['most_common_location']:
-        most_common_location = max(data['most_common_location'], key=data['most_common_location'].get)
-        print("Most common location:", most_common_location)
-    else:
-        print("most common location: no data available")          

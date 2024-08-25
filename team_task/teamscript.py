@@ -99,7 +99,7 @@ def parse_company_data(file_path, output_csv):
 
         writer.writerow(["Tasks per Month"])
         for month in months:
-            interaction_in_month = [item[1]['task_interactions_per_month'].get(month) or 0 for item in all_companies_data]
+            interaction_in_month = [item[1]['tasks_per_month'].get(month) or 0 for item in all_companies_data]
             writer.writerow([month]+interaction_in_month)
 
         most_common_title = [item[1]['most_common_title'] for item in all_companies_data]

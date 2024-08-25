@@ -38,13 +38,13 @@ def parse_company_data(file_path, output_csv):
                     continue
 
                 if "Total Comments" in line:
-                        company_data["comments_per_month"][f'{year}-{month}'] = value
+                        company_data["comments_per_month"][f'{month}/1/{year}'] = value
 
                 elif "Total Entries" in line:
-                        company_data["task_interactions_per_month"][f"{year}-{month}"] = value
+                        company_data["task_interactions_per_month"][f"{month}/1/{year}"] = value
     
                 elif "Total Tasks" in line:
-                        company_data["tasks_per_month"][f"{year}-{month}"] = value
+                        company_data["tasks_per_month"][f"{month}/1/{year}"] = value
                     
             elif line.startswith('Total_comments'):
                 try:
@@ -75,42 +75,38 @@ def parse_company_data(file_path, output_csv):
 
         if current_company and company_data:
             all_companies_data.append((current_company, company_data))
-    
+    months = ['3/1/2023', '4/1/2023', '5/1/2023', '6/1/2023', '7/1/2023', '8/1/2023', '9/1/2023', '10/1/2023', '11/1/2023', '12/1/2023',
+              '1/1/2024', '2/1/2024', '3/1/2024', '4/1/2024', '5/1/2024', '6/1/2024', '7/1/2024', '8/1/2024']
     with open(output_csv, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile) 
+        company_names = [item[0] for item in all_companies_data]
+        total_comments = [item[1]['total_comments'] for item in all_companies_data]
+        writer.writerow(["Category"]+company_names)
+        writer.writerow(["Total Comments (All Times)"] + total_comments)
 
-        for company, data in all_companies_data:
-            writer.writerow([f'Company: {company}'])
-            writer.writerow(['Comments per month:'])
-            if data["comments_per_month"]:
-                for date, count in data["comments_per_month"].items():
-                    year, month = date.split('-')
-                    writer.writerow([f'Year: {year}, Month: {month}, Total Comments: {count}'])
-            else:
-                writer.writerow(['No data available'])
+        writer.writerow(["Comments per Month"])
+        for month in months:
+            comments_in_month = [item[1]['comments_per_month'].get(month) or 0 for item in all_companies_data]
+            writer.writerow([month]+comments_in_month)
 
-            writer.writerow(['Tasks interactions per month:'])
-            if data["task_interactions_per_month"]:
-                for date, count in data["task_interactions_per_month"].items():
-                    year, month = date.split('-')
-                    writer.writerow([f'Year: {year}, Month: {month}, Total Entries: {count}'])
-            else:
-                writer.writerow(['No data available'])
+        writer.writerow(["Tasks Interactions per Month"])
+        for month in months:
+            interaction_in_month = [item[1]['task_interactions_per_month'].get(month) or 0 for item in all_companies_data]
+            writer.writerow([month]+interaction_in_month)
 
-            writer.writerow([f'Total_comments {data["total_comments"]}'])
-            writer.writerow([f'Task_counts {data["total_tasks"]}'])
+        total_tasks = [item[1]['total_tasks'] for item in all_companies_data]
+        writer.writerow(["Total Tasks (All time)"] + total_tasks)
 
-            writer.writerow(['Tasks per month:'])
-            if data["tasks_per_month"]:
-                for date, count in data["tasks_per_month"].items():
-                    year, month = date.split('-')
-                    writer.writerow([f'Year: {year}, Month: {month}, Total Tasks: {count}'])
-            else:
-                writer.writerow(['No data available'])
+        writer.writerow(["Tasks per Month"])
+        for month in months:
+            interaction_in_month = [item[1]['task_interactions_per_month'].get(month) or 0 for item in all_companies_data]
+            writer.writerow([month]+interaction_in_month)
 
-            writer.writerow([f'Most_common_title {data["most_common_title"]}'])
-            writer.writerow([f'Most_common_location {data["most_common_location"]}'])
-            writer.writerow([])
+        most_common_title = [item[1]['most_common_title'] for item in all_companies_data]
+        writer.writerow(["Most Common Title"] + most_common_title)
+
+        most_common_location = [item[1]['most_common_location'] for item in all_companies_data]
+        writer.writerow(["Most Common Location"] + most_common_location)
             
 
 parse_company_data("companies_data.txt", "output_company_data_grouped.csv")         
